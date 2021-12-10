@@ -104,22 +104,35 @@ class ImageCropper:
 
         exif = self.get_image_exif(self.img)
         self.img = self.rotate(self.img, exif)
-        ratio = float(self.img.size[1]) / self.img.size[0]
+        # ratio = float(self.img.size[1]) / self.img.size[0]
         # FIX RESIZE
-        if self.img.size[0] > 1200:
-            self.scale = self.img.size[0] / 1200
-            self.resized_img = self.img.resize((int(self.img.size[0] / self.scale), int(self.img.size[1] / self.scale)), PILImage.ANTIALIAS)
-        if self.img.size[1] > 800:
-            self.scale = self.img.size[1] / 800
-            self.resized_img = self.img.resize((int(self.img.size[0] / self.scale), int(self.img.size[1] / self.scale)), PILImage.ANTIALIAS)
-        if self.img.size[0] <= 1200 and self.img.size[1] <= 800:
-            self.resized_img = self.img
-            self.scale = 1
+        if self.img.size[0] > 4096 or self.img.size[1] > 4096:
+            self.__on_closing()
+            messagebox.showerror('Size exceeded', "The image's size exceeds 4096 pixels in one or both of the axis! Crop the image before using it again.")
+            return False
+        self.scale = 1
+        if self.img.size[0] > 1280:
+            self.scale = self.img.size[0] / 1280
+            self.img = self.img.resize((int(self.img.size[0] / self.scale), int(self.img.size[1] / self.scale)), PILImage.ANTIALIAS)
+        if self.img.size[1] > 720:
+            self.scale = self.img.size[1] / 720
+            self.img = self.img.resize((int(self.img.size[0] / self.scale), int(self.img.size[1] / self.scale)), PILImage.ANTIALIAS)
+        
+        print(self.scale)
+        #if self.img.size[0] > 1200:
+        #    self.scale = self.img.size[0] / 1200
+        #    self.resized_img = self.img.resize((int(self.img.size[0] / self.scale), int(self.img.size[1] / self.scale)), PILImage.ANTIALIAS)
+        #if self.img.size[1] > 800:
+        #    self.scale = self.img.size[1] / 800
+        #    self.resized_img = self.img.resize((int(self.img.size[0] / self.scale), int(self.img.size[1] / self.scale)), PILImage.ANTIALIAS)
+        #if self.img.size[0] <= 1200 and self.img.size[1] <= 800:
+        #    self.resized_img = self.img
+        #    self.scale = 1
         # self.img should be replaced with the scaled version of itself
 
-        self.photo = PILImageTk.PhotoImage(self.resized_img)
+        self.photo = PILImageTk.PhotoImage(self.img)
         self.canvas.delete(self.canvas_image)
-        self.canvas.config(width = self.resized_img.size[0], height = self.resized_img.size[1])
+        self.canvas.config(width = self.img.size[0], height = self.img.size[1])
         self.canvas_image = self.canvas.create_image(0, 0, anchor = NW, image = self.photo)
         self.canvas.pack(fill = BOTH, expand = YES)
         self.button_crop.pack(fill = X)
@@ -155,10 +168,7 @@ class ImageCropper:
             t = self.box[1]
             self.box[1] = self.box[3]
             self.box[3] = t
-        box = (self.box[0] * self.scale,
-               self.box[1] * self.scale,
-               self.box[2] * self.scale, 
-               self.box[3] * self.scale)
+        box = (self.box[0], self.box[1], self.box[2], self.box[3])
         try:
             cropped = self.img
             if self.box[0] != self.box[2] and self.box[1] != self.box[3]:
